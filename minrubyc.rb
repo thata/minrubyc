@@ -33,12 +33,22 @@ def gen(tree)
 
     # スタックを解放
     puts "\tadd sp, sp, #32"
+  elsif tree[0] == "stmts"
+    tree[1..].each do |statement|
+      gen(statement)
+    end
+  elsif tree[0] == "func_call" && tree[1] == "p"
+    # p 関数
+    # NOTE: 現時点では整数のみプリント可能
+    gen(tree[2])
+    puts "\tbl _print_int"
   else
     raise "invalid AST: #{tree}"
   end
 end
 
-tree = minruby_parse(ARGV[0])
+tree = minruby_parse(ARGF.read)
+# p tree
 
 puts "\t.text"
 puts "\t.align 2"
@@ -48,9 +58,6 @@ puts "\tsub sp, sp, #16"
 puts "\tstp x29, x30, [sp, #0]"
 
 gen(tree)
-
-# 入力した整数をプリントする
-puts "\tbl _print_int"
 
 puts "\tmov w0, #0"
 puts "\tldp x29, x30, [sp, #0]"
