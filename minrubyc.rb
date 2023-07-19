@@ -3,7 +3,7 @@ require "minruby"
 def gen(tree)
   if tree[0] == "lit"
     puts "\tmov w0, ##{tree[1]}"
-  elsif tree[0] == "+"
+  elsif %w(+ - * /).include?(tree[0])
     arg1 = tree[1]
     arg2 = tree[2]
 
@@ -18,10 +18,18 @@ def gen(tree)
     gen(arg2)
     puts "\tstr w0, [sp, #0]"
 
-    # arg1 + arg2 を計算
+    # 計算する
     puts "\tldr w8, [sp, #16]"
     puts "\tldr w9, [sp, #0]"
-    puts "\tadd w0, w8, w9"
+    if tree[0] == "+"
+      puts "\tadd w0, w8, w9"
+    elsif tree[0] == "-"
+      puts "\tsub w0, w8, w9"
+    elsif tree[0] == "*"
+      puts "\tmul w0, w8, w9"
+    elsif tree[0] == "/"
+      puts "\tsdiv w0, w8, w9"
+    end
 
     # スタックを解放
     puts "\tadd sp, sp, #32"
