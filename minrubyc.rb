@@ -1,6 +1,6 @@
 require "minruby"
 
-def gen(tree)
+def gen(tree, env)
   if tree[0] == "lit"
     puts "\tmov w0, ##{tree[1]}"
   elsif %w(+ - * /).include?(tree[0])
@@ -11,11 +11,11 @@ def gen(tree)
     puts "\tsub sp, sp, #32"
 
     # arg1 を評価
-    gen(arg1)
+    gen(arg1, env)
     puts "\tstr w0, [sp, #16]"
 
     # arg2 を評価
-    gen(arg2)
+    gen(arg2, env)
     puts "\tstr w0, [sp, #0]"
 
     # 計算する
@@ -35,31 +35,51 @@ def gen(tree)
     puts "\tadd sp, sp, #32"
   elsif tree[0] == "stmts"
     tree[1..].each do |statement|
-      gen(statement)
+      gen(statement, env)
     end
   elsif tree[0] == "func_call" && tree[1] == "p"
-    # p 関数
-    # NOTE: 現時点では整数のみプリント可能
-    gen(tree[2])
+    # p 関数（現時点では整数のみプリント可能）
+    gen(tree[2], env)
     puts "\tbl _print_int"
+  elsif tree[0] == "var_assign"
+    puts "\t; 変数 #{tree[1]} に代入"
+    gen(tree[2], env)
+    puts "\tstr w0, [fp, ##{env[tree[1]]}]"
+  elsif tree[0] == "var_ref"
+    puts "\t; 変数 #{tree[1]} を参照"
+    puts "\tldr w0, [fp, ##{env[tree[1]]}]"
   else
     raise "invalid AST: #{tree}"
   end
 end
 
+def var_assigns(hash, tree)
+  if tree[0] == "var_assign"
+    hash[tree[1]] = hash.size * 16
+  elsif tree[0] == "stmts"
+    tree[1..].each do |statement|
+      var_assigns(hash, statement)
+    end
+  end
+  hash
+end
+
 tree = minruby_parse(ARGF.read)
-# p tree
+
+# ローカル変数のインデックスを計算
+env = var_assigns({}, tree)
 
 puts "\t.text"
 puts "\t.align 2"
 puts "\t.globl _main"
 puts "_main:"
-puts "\tsub sp, sp, #16"
-puts "\tstp x29, x30, [sp, #0]"
+puts "\tsub sp, sp, #{16 + env.size * 16}"
+puts "\tstp x29, x30, [sp, ##{env.size * 16}]"
+puts "\tmov x29, sp"
 
-gen(tree)
+gen(tree, env)
 
 puts "\tmov w0, #0"
-puts "\tldp x29, x30, [sp, #0]"
-puts "\tadd sp, sp, #16"
+puts "\tldp x29, x30, [sp, ##{env.size * 16}]"
+puts "\tadd sp, sp, #{16 + env.size * 16}"
 puts "\tret"
