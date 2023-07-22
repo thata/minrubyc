@@ -88,6 +88,15 @@ def gen(tree, env)
 
     # ラベルIDをインクリメント
     $label_id += 1
+  elsif tree[0] == "while"
+    puts ".L_while_begin#{$label_id}:"
+    # 条件式が真の間は tree[2] を評価し続ける
+    gen(tree[1], env)
+    puts "\tcmp w0, #0"
+    puts "\tbeq .L_while_end#{$label_id}"
+    gen(tree[2], env)
+    puts "\tb .L_while_begin#{$label_id}"
+    puts ".L_while_end#{$label_id}:"
   else
     raise "invalid AST: #{tree}"
   end
