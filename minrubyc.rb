@@ -72,31 +72,36 @@ def gen(tree, env)
     puts "\t; 変数 #{tree[1]} を参照"
     puts "\tldr w0, [fp, ##{env[tree[1]]}]"
   elsif tree[0] == "if"
+    label_id = $label_id
+    $label_id = $label_id + 1
+
     # 条件式を評価
     gen(tree[1], env)
     # 真の場合は tree[2] を評価
     puts "\tcmp w0, #0"
-    puts "\tbeq .L_cond_else#{$label_id}"
+    puts "\tbeq .L_cond_else#{label_id}"
     gen(tree[2], env)
-    puts "\tb .L_cond_end#{$label_id}"
-    puts ".L_cond_else#{$label_id}:"
+    puts "\tb .L_cond_end#{label_id}"
+    puts ".L_cond_else#{label_id}:"
     # 偽の場合は tree[3] を評価（else が無いこともある）
     if tree[3]
       gen(tree[3], env)
     end
-    puts ".L_cond_end#{$label_id}:"
+    puts ".L_cond_end#{label_id}:"
 
     # ラベルIDをインクリメント
-    $label_id += 1
   elsif tree[0] == "while"
-    puts ".L_while_begin#{$label_id}:"
+    label_id = $label_id
+    $label_id = $label_id + 1
+
+    puts ".L_while_begin#{label_id}:"
     # 条件式が真の間は tree[2] を評価し続ける
     gen(tree[1], env)
     puts "\tcmp w0, #0"
-    puts "\tbeq .L_while_end#{$label_id}"
+    puts "\tbeq .L_while_end#{label_id}"
     gen(tree[2], env)
-    puts "\tb .L_while_begin#{$label_id}"
-    puts ".L_while_end#{$label_id}:"
+    puts "\tb .L_while_begin#{label_id}"
+    puts ".L_while_end#{label_id}:"
   else
     raise "invalid AST: #{tree}"
   end
@@ -114,6 +119,7 @@ def var_assigns(hash, tree)
 end
 
 tree = minruby_parse(ARGF.read)
+# pp tree
 
 # ローカル変数のインデックスを計算
 env = var_assigns({}, tree)
