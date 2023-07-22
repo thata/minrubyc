@@ -68,6 +68,18 @@ def gen(tree, env)
   elsif tree[0] == "var_ref"
     puts "\t; 変数 #{tree[1]} を参照"
     puts "\tldr w0, [fp, ##{env[tree[1]]}]"
+  elsif tree[0] == "if"
+    # 条件式を評価
+    gen(tree[1], env)
+    # 真の場合は tree[2] を実行
+    puts "\tcmp w0, #0"
+    puts "\tbeq .Lelse0"
+    gen(tree[2], env)
+    puts "\tb .Lend0"
+    puts ".Lelse0:"
+    # 偽の場合は tree[3] を実行
+    gen(tree[3], env)
+    puts ".Lend0:"
   else
     raise "invalid AST: #{tree}"
   end

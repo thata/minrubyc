@@ -17,6 +17,10 @@ assert() {
     fi
 }
 
+# 条件分岐
+assert 42 'if (0 == 0); p(42); else p(43); end'
+assert 43 'if (0 == 1); p(42); else p(43); end'
+
 assert 4649 'p 4649'
 assert 40 'p 30 + 20 - 10'
 assert 200 'p 10 * 20'
@@ -38,5 +42,6 @@ assert 0 'p(1 > 1)'
 assert 1 'p(2 >= 1)'
 assert 1 'p(1 >= 1)'
 assert 0 'p(0 >= 1)'
+
 
 echo OK
