@@ -1,5 +1,8 @@
 require "minruby"
 
+# 条件分岐のラベルを一意にするためのID
+$label_id = 0
+
 def gen(tree, env)
   if tree[0] == "lit"
     puts "\tmov w0, ##{tree[1]}"
@@ -73,13 +76,16 @@ def gen(tree, env)
     gen(tree[1], env)
     # 真の場合は tree[2] を実行
     puts "\tcmp w0, #0"
-    puts "\tbeq .Lelse0"
+    puts "\tbeq .L_cond_else#{$label_id}"
     gen(tree[2], env)
-    puts "\tb .Lend0"
-    puts ".Lelse0:"
+    puts "\tb .L_cond_end#{$label_id}"
+    puts ".L_cond_else#{$label_id}:"
     # 偽の場合は tree[3] を実行
     gen(tree[3], env)
-    puts ".Lend0:"
+    puts ".L_cond_end#{$label_id}:"
+
+    # ラベルIDをインクリメント
+    $label_id += 1
   else
     raise "invalid AST: #{tree}"
   end
