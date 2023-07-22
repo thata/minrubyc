@@ -3,7 +3,7 @@ require "minruby"
 def gen(tree, env)
   if tree[0] == "lit"
     puts "\tmov w0, ##{tree[1]}"
-  elsif %w(+ - * /).include?(tree[0])
+  elsif %w(+ - * / == != < <= > >=).include?(tree[0])
     arg1 = tree[1]
     arg2 = tree[2]
 
@@ -29,6 +29,26 @@ def gen(tree, env)
       puts "\tmul w0, w8, w9"
     elsif tree[0] == "/"
       puts "\tsdiv w0, w8, w9"
+    elsif tree[0] == "=="
+      puts "cmp w8, w9"
+      puts "cset w0, eq"
+    elsif tree[0] == "!="
+      puts "cmp w8, w9"
+      puts "cset w0, ne"
+    elsif tree[0] == "<"
+      puts "cmp w8, w9"
+      puts "cset w0, lt"
+    elsif tree[0] == "<="
+      puts "cmp w8, w9"
+      puts "cset w0, le"
+    elsif tree[0] == ">"
+      puts "cmp w8, w9"
+      puts "cset w0, gt"
+    elsif tree[0] == ">="
+      puts "cmp w8, w9"
+      puts "cset w0, ge"
+    else
+      raise "invalid operator: #{tree[0]}"
     end
 
     # スタックを解放
