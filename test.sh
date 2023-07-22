@@ -20,6 +20,8 @@ assert() {
 # 条件分岐
 assert 42 'if (0 == 0); p(42); else p(43); end'
 assert 43 'if (0 == 1); p(42); else p(43); end'
+assert 41 'if (0 == 0); p(41); end'
+assert '' 'if (0 == 1); p(41); end'
 
 assert 4649 'p 4649'
 assert 40 'p 30 + 20 - 10'

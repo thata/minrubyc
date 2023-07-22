@@ -74,14 +74,16 @@ def gen(tree, env)
   elsif tree[0] == "if"
     # 条件式を評価
     gen(tree[1], env)
-    # 真の場合は tree[2] を実行
+    # 真の場合は tree[2] を評価
     puts "\tcmp w0, #0"
     puts "\tbeq .L_cond_else#{$label_id}"
     gen(tree[2], env)
     puts "\tb .L_cond_end#{$label_id}"
     puts ".L_cond_else#{$label_id}:"
-    # 偽の場合は tree[3] を実行
-    gen(tree[3], env)
+    # 偽の場合は tree[3] を評価（else が無いこともある）
+    if tree[3]
+      gen(tree[3], env)
+    end
     puts ".L_cond_end#{$label_id}:"
 
     # ラベルIDをインクリメント
