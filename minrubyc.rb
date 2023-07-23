@@ -63,6 +63,8 @@ def gen(tree, env)
     tree[1..].each do |statement|
       gen(statement, env)
     end
+  elsif tree[0] == "func_def"
+    # 上で定義済みなのでここでは何もしない
   elsif tree[0] == "func_call"
     # WORK_REGISTERS の値をスタックに退避
     puts "\tsub sp, sp, ##{WORK_REGISTERS.size * 4}"
@@ -149,6 +151,18 @@ def var_assigns(hash, tree)
   hash
 end
 
+def func_defs(hash, tree)
+  if tree[0] == "func_def"
+    # 関数名をキーにして [関数名, 引数, 関数本体] を格納
+    hash[tree[1]] = tree[1..]
+  elsif tree[0] == "stmts"
+    tree[1..].each do |statement|
+      func_defs(hash, statement)
+    end
+  end
+  hash
+end
+
 tree = minruby_parse(ARGF.read)
 # pp tree
 
@@ -157,6 +171,44 @@ env = var_assigns({}, tree)
 
 puts "\t.text"
 puts "\t.align 2"
+
+# ユーザー定義関数
+func_defs({}, tree).each do |key, func_def|
+  puts "\t;; func_def: #{func_def}"
+
+  name, args, body = func_def
+
+  # # args と var_assign を env へ
+  env = {}
+  # env = args.each_with_index.map { |arg, i|
+  #   [arg, i * 16]
+  # }.to_h
+  env = var_assigns(env, body)
+  puts "\t;; env: #{env}"
+
+  puts "\t.globl _#{name}"
+  puts "_#{name}:"
+
+  # fp と lr をスタックへ退避
+  puts "\tsub sp, sp, #{16 + env.size * 16}"
+  puts "\tstp x29, x30, [sp, ##{env.size * 16}]"
+  puts "\tmov x29, sp"
+
+  gen(body, env)
+
+  # fp と lr をスタックから復元
+  puts "\tldp x29, x30, [sp, ##{env.size * 16}]"
+  puts "\tadd sp, sp, #{16 + env.size * 16}"
+
+  puts "\tret"
+end
+
+  # # レジスタに格納されている引数をスタックへ退避
+  # args.each_with_index do |arg, i|
+  #   puts "\tstr x#{i}, [sp, ##{i * 16}]"
+  # end
+
+
 puts "\t.globl _main"
 puts "_main:"
 puts "\tsub sp, sp, #{16 + env.size * 16}"
