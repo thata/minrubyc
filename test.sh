@@ -17,6 +17,11 @@ assert() {
     fi
 }
 
+
+# func_call
+assert 30 'p add(10, 20)'
+assert 30 'print_int(add(10, 20))'
+
 # case
 assert 2 'case 42; when 0; p(0); when 1; p(1); else p(2); end'
 assert 1 'case 42; when 0; p(0); when 42; p(1); else p(2); end'

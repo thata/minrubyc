@@ -1,5 +1,8 @@
 require "minruby"
 
+PARAM_REGISTERS = %w(w0 w1 w2 w3 w4 w5 w6 w7)
+WORK_REGISTERS = %w(w19 w20 w21 w22 w23 w24 w25 w26)
+
 # 条件分岐のラベルを一意にするためのID
 $label_id = 0
 
@@ -64,6 +67,41 @@ def gen(tree, env)
     # p 関数（現時点では整数のみプリント可能）
     gen(tree[2], env)
     puts "\tbl _print_int"
+  elsif tree[0] == "func_call"
+    # WORK_REGISTERS の値をスタックに退避
+    puts "\tsub sp, sp, ##{WORK_REGISTERS.size * 4}"
+    WORK_REGISTERS.each_with_index do |reg, i|
+      puts "\tstr #{reg}, [sp, ##{i * 4}]"
+    end
+
+    # TODO: env のことは一旦忘れる
+    env = {}
+
+    # args の評価結果を x19, x20, ... に格納
+    args = tree[2..]
+
+    # NOTE: 実装を楽にするため、渡せる引数の数は8個までとする
+    raise "too many arguments (given #{args.size}, expected 8)" if args.size > 8
+
+    # 引数の評価結果を一時的に WORK_REGISTERS に格納
+    args.each_with_index do |arg, i|
+      gen(arg, env)
+      puts "\tmov #{WORK_REGISTERS[i]}, w0"
+    end
+
+    # WORK_REGISTERS に格納した引数を PARAM_REGISTERS へ移動
+    args.each_with_index do |arg, i|
+      puts "\tmov #{PARAM_REGISTERS[i]}, #{WORK_REGISTERS[i]}"
+    end
+
+    # 関数呼び出し
+    puts "\tbl _#{tree[1]}"
+
+    # WORK_REGISTERS の値をスタックから復元
+    WORK_REGISTERS.each_with_index do |reg, i|
+      puts "\tldr #{reg}, [sp, ##{i * 4}]"
+    end
+    puts "\tadd sp, sp, ##{WORK_REGISTERS.size * 4}"
   elsif tree[0] == "var_assign"
     puts "\t; 変数 #{tree[1]} に代入"
     gen(tree[2], env)
