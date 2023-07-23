@@ -63,19 +63,12 @@ def gen(tree, env)
     tree[1..].each do |statement|
       gen(statement, env)
     end
-  elsif tree[0] == "func_call" && tree[1] == "p"
-    # p 関数（現時点では整数のみプリント可能）
-    gen(tree[2], env)
-    puts "\tbl _print_int"
   elsif tree[0] == "func_call"
     # WORK_REGISTERS の値をスタックに退避
     puts "\tsub sp, sp, ##{WORK_REGISTERS.size * 4}"
     WORK_REGISTERS.each_with_index do |reg, i|
       puts "\tstr #{reg}, [sp, ##{i * 4}]"
     end
-
-    # TODO: env のことは一旦忘れる
-    env = {}
 
     # args の評価結果を x19, x20, ... に格納
     args = tree[2..]
