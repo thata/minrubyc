@@ -166,14 +166,17 @@ end
 tree = minruby_parse(ARGF.read)
 # pp tree
 
-# ローカル変数のスタック上の位置を算出
+# ローカル変数を構文木より抽出し、各ローカル変数のスタック上の位置を算出
 env = var_assigns({}, tree)
+
+# ユーザー定義関数を構文木より抽出
+func_defs = func_defs({}, tree)
 
 puts "\t.text"
 puts "\t.align 2"
 
-# ユーザー定義関数
-func_defs({}, tree).each do |key, func_def|
+# ユーザー定義関数をアセンブリとして出力
+func_defs.each do |key, func_def|
   name, args, body = func_def
 
   # 引数とローカル変数のスタック上の位置を算出
@@ -205,6 +208,7 @@ func_defs({}, tree).each do |key, func_def|
   puts "\tret"
 end
 
+# メイン関数
 puts "\t.globl _main"
 puts "_main:"
 puts "\tsub sp, sp, #{16 + env.size * 16}"
