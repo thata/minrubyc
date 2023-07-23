@@ -20,6 +20,7 @@ assert() {
 # func_def
 assert 4649 'def hello() 4649; end; p hello()'
 assert 30 'def hello() a = 10; b = 20; a + b; end; p hello()'
+assert 120 'def hello(a) b = 20; a + b; end; p hello(100)'
 
 # func_call
 assert 30 'p add(10, 20)'

@@ -166,7 +166,7 @@ end
 tree = minruby_parse(ARGF.read)
 # pp tree
 
-# ローカル変数のインデックスを計算
+# ローカル変数のスタック上の位置を算出
 env = var_assigns({}, tree)
 
 puts "\t.text"
@@ -174,17 +174,13 @@ puts "\t.align 2"
 
 # ユーザー定義関数
 func_defs({}, tree).each do |key, func_def|
-  puts "\t;; func_def: #{func_def}"
-
   name, args, body = func_def
 
-  # # args と var_assign を env へ
-  env = {}
-  # env = args.each_with_index.map { |arg, i|
-  #   [arg, i * 16]
-  # }.to_h
+  # 引数とローカル変数のスタック上の位置を算出
+  env = args.each_with_index.map { |arg, i|
+    [arg, i * 16]
+  }.to_h
   env = var_assigns(env, body)
-  puts "\t;; env: #{env}"
 
   puts "\t.globl _#{name}"
   puts "_#{name}:"
@@ -194,6 +190,12 @@ func_defs({}, tree).each do |key, func_def|
   puts "\tstp x29, x30, [sp, ##{env.size * 16}]"
   puts "\tmov x29, sp"
 
+  # args をスタックへ退避
+  args.each_with_index do |arg, i|
+    puts "\t; 引数 #{arg} をスタックへ退避"
+    puts "\tstr w#{i}, [x29, ##{env[arg]}]"
+  end
+
   gen(body, env)
 
   # fp と lr をスタックから復元
@@ -202,12 +204,6 @@ func_defs({}, tree).each do |key, func_def|
 
   puts "\tret"
 end
-
-  # # レジスタに格納されている引数をスタックへ退避
-  # args.each_with_index do |arg, i|
-  #   puts "\tstr x#{i}, [sp, ##{i * 16}]"
-  # end
-
 
 puts "\t.globl _main"
 puts "_main:"
