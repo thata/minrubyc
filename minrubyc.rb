@@ -38,6 +38,14 @@ def gen(tree)
 
     # スタックを破棄
     puts "\tadd sp, sp, #16"
+  elsif tree[0] == "func_call" && tree[1] == "p"
+    expr = tree[2]
+    gen(expr)
+    puts "\tbl _p"
+  elsif tree[0] == "stmts"
+    tree[1..].each do |stmt|
+      gen(stmt)
+    end
   else
     raise "invalid AST: #{tree}"
   end
@@ -53,9 +61,6 @@ puts "\tsub sp, sp, #16"
 puts "\tstp fp, lr, [sp, #0]"
 
 gen(tree)
-
-# 入力した整数をプリントする
-puts "\tbl _p"
 
 puts "\tmov w0, #0"
 puts "\tldp fp, lr, [sp, #0]"
