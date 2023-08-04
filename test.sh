@@ -18,11 +18,16 @@ assert() {
     fi
 }
 
-# 条件分岐
+# while
+assert 55 'sum = 0; i = 1; while (i <= 10); sum = sum + i; i = i + 1; end; p sum'
+assert 55 'sum = 0; i = 1; while (i <= 10); one = 1; sum = sum + i; i = i + one; end; p sum'
+
+# if
 assert 42 'if (0 == 0); p(42); else p(43); end'
 assert 43 'if (0 == 1); p(42); else p(43); end'
 assert 44 'a = 44; if (a == 44); p a; end'
 assert 45 'a = 40; if (a == 40); b = 5;  p a + b; end'
+assert "10\n20\n0\n" 'a = 10; if (1); b = 20; else c = 30; end; p a; p b; p c'
 
 # 比較演算
 # 真の場合は1、偽の場合は0を返す

@@ -7,10 +7,18 @@ def var_names(tree)
   elsif tree[0] == "stmts"
     arr = []
     tree[1..].each do |statement|
-      arr = arr + var_names(statement)
+      arr += var_names(statement)
     end
     arr
   elsif tree[0] == "if"
+    arr = []
+    arr += var_names(tree[2])
+    if tree[3]
+      arr += var_names(tree[3])
+    end
+    arr
+  elsif tree[0] == "while"
+    puts "\t// while: #{tree}"
     var_names(tree[2])
   else
     []
@@ -103,10 +111,10 @@ def gen(tree, env)
     name = tree[1]
     puts "\tldr x0, [fp, ##{var_offset(name, env)}]"
   elsif tree[0] == "if"
-    cexpr, texpr, fexpr = tree[1], tree[2], tree[3]
+    cond, texpr, fexpr = tree[1], tree[2], tree[3]
     # 条件式を評価
     puts "\t// 条件式を評価"
-    gen(cexpr, env)
+    gen(cond, env)
     puts "\tcmp x0, #0"
 
     puts "\tbeq .Lelse#{tree.object_id}"
@@ -120,6 +128,15 @@ def gen(tree, env)
     puts "\t// 偽の場合"
     gen(fexpr, env) if fexpr
     puts ".Lendif#{tree.object_id}:"
+  elsif tree[0] == "while"
+    cond, body = tree[1], tree[2]
+    puts ".Lwhile#{tree.object_id}:"
+    gen(cond, env)
+    puts "\tcmp x0, #0"
+    puts "\tbeq .Lendwhile#{tree.object_id}"
+    gen(body, env)
+    puts "\tb .Lwhile#{tree.object_id}"
+    puts ".Lendwhile#{tree.object_id}:"
   else
     raise "invalid AST: #{tree}"
   end
@@ -137,6 +154,12 @@ lvar_size = env.size * 8
 puts "\tsub sp, sp, ##{16 + (lvar_size % 16 == 0 ? lvar_size : lvar_size + 8)}"
 puts "\tstp fp, lr, [sp, #0]"
 puts "\tmov fp, sp"
+
+# ローカル変数を0で初期化
+env.each do |var|
+  puts "\tmov x0, #0"
+  puts "\tstr x0, [fp, ##{var_offset(var, env)}]"
+end
 
 gen(tree, env)
 
