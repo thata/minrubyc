@@ -18,6 +18,9 @@ assert() {
     fi
 }
 
+# 組み込み関数
+assert 5963 'p add(5900, 63)'
+
 # while
 assert 55 'sum = 0; i = 1; while (i <= 10); sum = sum + i; i = i + 1; end; p sum'
 assert 55 'sum = 0; i = 1; while (i <= 10); one = 1; sum = sum + i; i = i + one; end; p sum'
