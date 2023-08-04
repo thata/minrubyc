@@ -18,6 +18,12 @@ assert() {
     fi
 }
 
+# 条件分岐
+assert 42 'if (0 == 0); p(42); else p(43); end'
+assert 43 'if (0 == 1); p(42); else p(43); end'
+assert 44 'a = 44; if (a == 44); p a; end'
+assert 45 'a = 40; if (a == 40); b = 5;  p a + b; end'
+
 # 比較演算
 # 真の場合は1、偽の場合は0を返す
 assert 1 'p(1 == 1)'

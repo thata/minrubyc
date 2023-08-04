@@ -1,25 +1,27 @@
 require "minruby"
 
 # tree 内の変数名一覧
-def var_names(arr, tree)
+def var_names(tree)
   if tree[0] == "var_assign"
-    arr.include?(tree[1]) ? arr : arr + [tree[1]]
+    [tree[1]]
   elsif tree[0] == "stmts"
-    tmp_arr = arr
+    arr = []
     tree[1..].each do |statement|
-      tmp_arr = tmp_arr + var_names(tmp_arr, statement)
+      arr = arr + var_names(statement)
     end
-    tmp_arr
-  else
     arr
+  elsif tree[0] == "if"
+    var_names(tree[2])
+  else
+    []
   end
 end
 
-# スタックフレーム上の変数のアドレスをスタックポインタ（sp）からのオフセットとして返す
+# スタックフレーム上の変数のアドレスをフレームポインタ(fp)からのオフセットとして返す
 # 例：
-#   ひとつ目の変数のアドレス = スタックポインタ + 16
-#   ふたつ目の変数のアドレス = スタックポインタ + 24
-#   ふたつ目の変数のアドレス = スタックポインタ + 32
+#   ひとつ目の変数のアドレス = フレームポインタ(fp) + 16
+#   ふたつ目の変数のアドレス = フレームポインタ(fp) + 24
+#   ふたつ目の変数のアドレス = フレームポインタ(fp) + 32
 #   ...
 def var_offset(var, env)
   # 変数1つにつき8バイトの領域が必要
@@ -95,29 +97,51 @@ def gen(tree, env)
 
     # 評価した値をスタック上のローカル変数領域へ格納
     gen(expr, env)
-    puts "\tstr x0, [sp, ##{var_offset(name, env)}]"
+    puts "\tstr x0, [fp, ##{var_offset(name, env)}]"
   elsif tree[0] == "var_ref"
     # スタック上のローカル変数領域からx0へ値をロード
     name = tree[1]
-    puts "\tldr x0, [sp, ##{var_offset(name, env)}]"
+    puts "\tldr x0, [fp, ##{var_offset(name, env)}]"
+  elsif tree[0] == "if"
+    cexpr, texpr, fexpr = tree[1], tree[2], tree[3]
+    # 条件式を評価
+    puts "\t// 条件式を評価"
+    gen(cexpr, env)
+    puts "\tcmp x0, #0"
+
+    puts "\tbeq .Lelse#{tree.object_id}"
+
+    # 真の場合はtexprを評価
+    puts "\t// 真の場合"
+    gen(texpr, env)
+    puts "\tb .Lendif#{tree.object_id}"
+    puts ".Lelse#{tree.object_id}:"
+    # 偽の場合はfexprを評価
+    puts "\t// 偽の場合"
+    gen(fexpr, env) if fexpr
+    puts ".Lendif#{tree.object_id}:"
   else
     raise "invalid AST: #{tree}"
   end
 end
 
 tree = minruby_parse(ARGF.read)
-env = var_names([], tree)
+env = var_names(tree)
 
 puts "\t.text"
 puts "\t.align 2"
 puts "\t.globl _main"
 puts "_main:"
-puts "\tsub sp, sp, ##{16 + env.size * 8}"
+lvar_size = env.size * 8
+# NOTE: スタックのサイズは16の倍数でなければならない
+puts "\tsub sp, sp, ##{16 + (lvar_size % 16 == 0 ? lvar_size : lvar_size + 8)}"
 puts "\tstp fp, lr, [sp, #0]"
+puts "\tmov fp, sp"
 
 gen(tree, env)
 
 puts "\tmov w0, #0"
 puts "\tldp fp, lr, [sp, #0]"
-puts "\tadd sp, sp, ##{16 + env.size * 8}"
+# NOTE: スタックのサイズは16の倍数でなければならない
+puts "\tadd sp, sp, ##{16 + (lvar_size % 16 == 0 ? lvar_size : lvar_size + 8)}"
 puts "\tret"
