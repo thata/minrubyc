@@ -20,6 +20,12 @@ assert() {
     fi
 }
 
-assert "4649" '4649'
+assert "305" "(10+20*30)/2"
+assert "5" "30/6"
+assert "72" "8*9"
+assert "20" "30-10"
+assert "30" "10+20"
+assert "-10" "-10"
+assert "4649" "4649"
 
 echo OK
