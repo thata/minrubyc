@@ -18,6 +18,23 @@ assert() {
     fi
 }
 
+# 比較演算
+# 真の場合は1、偽の場合は0を返す
+assert 1 'p(1 == 1)'
+assert 0 'p(1 == 2)'
+assert 0 'p(1 != 1)'
+assert 1 'p(1 != 2)'
+assert 1 'p(1 < 2)'
+assert 0 'p(1 < 1)'
+assert 1 'p(1 <= 2)'
+assert 1 'p(1 <= 1)'
+assert 0 'p(1 <= 0)'
+assert 1 'p(2 > 1)'
+assert 0 'p(1 > 1)'
+assert 1 'p(2 >= 1)'
+assert 1 'p(1 >= 1)'
+assert 0 'p(0 >= 1)'
+
 # 変数
 assert "10\n20\n30\n" "a = 10; b = 20; c = 30; p a; p b; p c"
 
