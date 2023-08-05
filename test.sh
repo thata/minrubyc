@@ -18,7 +18,11 @@ assert() {
     fi
 }
 
+# putc
+assert "Hello!!" "putc 72; putc 101; putc 108; putc 108; putc 111; putc 33; putc 33"
+
 # ユーザー定義関数
+assert "50" "a = 10; def foo(a) b = 20; a + b; end; p foo(30)"
 assert "55" "def fib(n) if (n < 2); n else fib(n - 1) + fib(n - 2); end; end; p fib(10)"
 assert "20" "def foo(n) b = 2; n * b; end; p foo(10)"
 

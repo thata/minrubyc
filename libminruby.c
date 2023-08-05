@@ -1,10 +1,15 @@
 #include <stdio.h>
 
-long p(long x) {
+long minruby_p(long x) {
     printf("%ld\n", x);
     return x;
 }
 
-long add(long x, long y) {
+long minruby_putc(long x) {
+    putchar(x);
+    return x;
+}
+
+long minruby_add(long x, long y) {
     return x + y;
 }

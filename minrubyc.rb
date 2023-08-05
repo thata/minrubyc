@@ -134,7 +134,7 @@ def gen(tree, env)
     end
 
     # 関数呼び出し
-    puts "\tbl _#{name}"
+    puts "\tbl _minruby_#{name}"
   elsif tree[0] == "stmts"
     tree[1..].each do |stmt|
       gen(stmt, env)
@@ -199,8 +199,8 @@ func_defs.values.each do |func_def|
   lenv = var_names(body)
   env = params + lenv
 
-  puts "\t.globl _#{name}"
-  puts "_#{name}:"
+  puts "\t.globl _minruby_#{name}"
+  puts "_minruby_#{name}:"
 
   # 関数プロローグ
   lvar_size = env.size * 8
