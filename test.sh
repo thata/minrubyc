@@ -18,6 +18,10 @@ assert() {
     fi
 }
 
+# ユーザー定義関数
+assert "55" "def fib(n) if (n < 2); n else fib(n - 1) + fib(n - 2); end; end; p fib(10)"
+assert "20" "def foo(n) b = 2; n * b; end; p foo(10)"
+
 # 組み込み関数
 assert 5963 'p add(5900, 63)'
 

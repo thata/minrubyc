@@ -38,6 +38,29 @@ def var_offset(var, env)
   env.index(var) * 8 + 16
 end
 
+def func_defs(tree)
+  if tree[0] == "func_def"
+    {
+      # 関数名をキーにして [関数名, 引数, 関数本体] を格納
+      tree[1] => tree[1..]
+    }
+  elsif tree[0] == "stmts"
+    tmp_hash = {}
+    tree[1..].each do |stmt|
+      tmp_hash.merge!(func_defs(stmt))
+    end
+    tmp_hash
+  else
+    {}
+  end
+end
+
+def function_prolog(tree)
+end
+
+def function_ebilog(tree)
+end
+
 def gen(tree, env)
   if tree[0] == "lit"
     puts "\tmov x0, ##{tree[1]}"
@@ -126,6 +149,8 @@ def gen(tree, env)
     # スタック上のローカル変数領域からx0へ値をロード
     name = tree[1]
     puts "\tldr x0, [fp, ##{var_offset(name, env)}]"
+  elsif tree[0] == "func_def"
+    # ここでは何もしない
   elsif tree[0] == "if"
     cond, texpr, fexpr = tree[1], tree[2], tree[3]
     # 条件式を評価
@@ -160,19 +185,55 @@ end
 
 tree = minruby_parse(ARGF.read)
 env = var_names(tree)
+func_defs = func_defs(tree)
+# puts "// tree: #{tree}"
+# puts "// env: #{env}"
+# puts "// func_defs: #{func_defs}"
 
 puts "\t.text"
 puts "\t.align 2"
+
+# ユーザー定義関数
+func_defs.values.each do |func_def|
+  name, params, body = func_def
+  lenv = var_names(body)
+  env = params + lenv
+
+  puts "\t.globl _#{name}"
+  puts "_#{name}:"
+
+  # 関数プロローグ
+  lvar_size = env.size * 8
+  puts "\tsub sp, sp, ##{16 + (lvar_size % 16 == 0 ? lvar_size : lvar_size + 8)}" # NOTE: スタックのサイズは16の倍数でなければならない
+  puts "\tstp fp, lr, [sp, #0]"
+  puts "\tmov fp, sp"
+  # スタック上のパラメータ領域を初期化
+  params.each_with_index do |param, i|
+    puts "\tstr #{PARAM_REGISTERS[i]}, [fp, ##{var_offset(param, env)}]"
+  end
+  # ローカル変数を初期化
+  lenv.each do |var|
+    puts "\tmov x0, #0"
+    puts "\tstr x0, [fp, ##{var_offset(var, env)}]"
+  end
+
+  gen(body, env)
+
+  # 関数エピローグ
+  puts "\tldp fp, lr, [sp, #0]"
+  puts "\tadd sp, sp, ##{16 + (lvar_size % 16 == 0 ? lvar_size : lvar_size + 8)}" # NOTE: スタックのサイズは16の倍数でなければならない
+  puts "\tret"
+end
+
+# メイン関数
 puts "\t.globl _main"
 puts "_main:"
 lvar_size = env.size * 8
-# NOTE: スタックのサイズは16の倍数でなければならない
-puts "\tsub sp, sp, ##{16 + (lvar_size % 16 == 0 ? lvar_size : lvar_size + 8)}"
+puts "\tsub sp, sp, ##{16 + (lvar_size % 16 == 0 ? lvar_size : lvar_size + 8)}" # NOTE: スタックのサイズは16の倍数でなければならない
 puts "\tstp fp, lr, [sp, #0]"
 puts "\tmov fp, sp"
-
-# ローカル変数を0で初期化
 env.each do |var|
+  # ローカル変数を0で初期化
   puts "\tmov x0, #0"
   puts "\tstr x0, [fp, ##{var_offset(var, env)}]"
 end
